@@ -1,5 +1,22 @@
-# Vue 3 + TypeScript + Vite
+# Peer-to-Peer File Sharing Web App
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+This web application enables users to share files peer-to-peer using a simple and intuitive interface. Users can upload files, download all the files currently on the server as a zip folder, and clear all files on the server.
 
-Learn more about the recommended Project Setup and IDE Support in the [Vue Docs TypeScript Guide](https://vuejs.org/guide/typescript/overview.html#project-setup).
+## Features
+
+- **Upload Files**: Users can upload multiple files to the server.
+- **Download Files**: Users can download all the files currently stored on the server as a single zip file.
+- **Clear Files**: Users can clear all files from the server, refreshing the storage for new files.
+
+## Technology Stack
+
+- **Frontend**: Vue.js
+- **Backend**: FastAPI (Python)
+
+## How It Works
+
+1. **Upload**: Users can select and upload multiple files. These files are stored on the server and can be accessed by other users.
+2. **Download**: All users can download the uploaded files as a single zip archive.
+3. **Clear**: Once the files are no longer needed, any user can clear all files from the server, making room for new uploads.
+
+This application facilitates peer-to-peer file sharing where users interact with the server directly to manage files.
