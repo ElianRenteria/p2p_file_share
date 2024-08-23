@@ -1,10 +1,54 @@
 <script setup lang="ts">
   import axios from 'axios';
   import { useToast } from "primevue/usetoast";
+  import { usePrimeVue } from 'primevue/config';
 
   const baseUrl = import.meta.env.VITE_BASEURL;
   const toast = useToast();
-  const fileupload = ref();
+  const totalSize = ref(0);
+  const totalSizePercent = ref(0);
+  const files = ref([]);
+  const $primevue = usePrimeVue();
+
+  const onRemoveTemplatingFile = (file, removeFileCallback, index) => {
+    removeFileCallback(index);
+    totalSize.value -= file.size; // Adjust calculation
+    totalSizePercent.value = (totalSize.value / 100000000) * 100; // 100MB in bytes
+  };
+
+  const onClearTemplatingUpload = (clear) => {
+      clear();
+      totalSize.value = 0;
+      totalSizePercent.value = 0;
+  };
+
+  const onSelectedFiles = (event) => {
+    files.value = event.files;
+    files.value.forEach((file) => {
+        totalSize.value += file.size; // Sum file sizes in bytes
+    });
+    totalSizePercent.value = (totalSize.value / 100000000) * 100; // 100MB in bytes
+  };
+
+  const uploadEvent = (callback) => {
+      totalSizePercent.value = totalSize.value / 10;
+      callback();
+  };
+
+  const onTemplatedUpload = () => {
+      toast.add({ severity: "success", summary: "Success", detail: "File Uploaded", life: 3000 });
+  };
+
+  const formatSize = (bytes) => {
+    const k = 1024;
+    const dm = 2; // Adjusted decimal places
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+
+    if (bytes === 0) return `0 ${sizes[0]}`;
+
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+  };
 
 
   const downloadFiles = async () => {
@@ -36,39 +80,80 @@
     }
   };
 
-  const upload = () => {
-      fileupload.value.upload();
-  };
-
-  const onUpload = () => {
-      toast.add({ severity: 'success', summary: 'Success', detail: 'Files Uploaded', life: 3000 });
-  };
-
   const isDarkMode = ref(false);
   const iconClass = computed(() => isDarkMode.value ? 'pi pi-sun' : 'pi pi-moon');
 
   function toggleDarkMode() {
       const element = document.querySelector('html');
       element.classList.toggle('my-app-dark');
-      isDarkMode.valie = !isDarkMode;
+      isDarkMode.value = !isDarkMode.value;
   }
 </script>
 
 <template>
-  <div class="w-full h-full flex flex-column justify-content-start align-items-center container">
+  <div class="bg-slate-700 w-full h-full flex flex-column justify-content-start align-items-center container">
     <Toast />
-    <div class="w-full flex justify-content-end"><Button class="mx-5 my-3" @click="toggleDarkMode()"><i :class="iconClass" style="font-size: 1.5rem"></i></Button></div>
-    <Card class="w-10 h-10">
-      <template #title>
-        <div class="flex justify-content-center"><h1>File Manager</h1></div>
-      </template>
-      <template #content>
-        <FileUpload ref="fileupload" mode="basic" name="files" :url="`${baseUrl}/upload`" :maxFileSize="1000000" @upload="onUpload" :multiple="true" />
-        <Button label="Upload" @click="upload" severity="secondary" />
-        <Button @click="downloadFiles" severity="success">Download All Files</Button>
-        <Button @click="clearFiles" severity="danger">Clear All Files</Button>
-      </template>
-    </Card>
+    <div class="w-full flex justify-content-start"><Button class="mx-5 my-3" @click="toggleDarkMode()"><i :class="iconClass" style="font-size: 1.5rem"></i></Button></div>
+    <div :class="{'app_content_dark': isDarkMode}" class="w-10 h-10 app_content_light">
+        <div class="flex justify-content-center align-items-center"><h1 class="mr-2">Pi-Share</h1><i class="pi pi-send" style="font-size: 2.7rem;"></i></div>
+        <FileUpload class="mx-10" name="files" :url="`${baseUrl}/upload`" @upload="onTemplatedUpload($event)" :multiple="true" :maxFileSize="104857600" @select="onSelectedFiles">
+          <template #header="{ chooseCallback, uploadCallback, clearCallback, files }">
+              <div class="flex flex-wrap justify-between items-center flex-1 gap-4">
+                  <div class="flex gap-2">
+                      <Button @click="chooseCallback()" icon="pi pi-images" rounded outlined severity="secondary"></Button>
+                      <Button @click="uploadEvent(uploadCallback)" icon="pi pi-cloud-upload" rounded outlined severity="success" :disabled="!files || files.length === 0"></Button>
+                      <Button @click="clearCallback()" icon="pi pi-times" rounded outlined severity="danger" :disabled="!files || files.length === 0"></Button>
+                  </div>
+                  <ProgressBar :value="totalSizePercent" :showValue="false" class="md:w-20rem h-1 w-full md:ml-auto">
+                      <span class="whitespace-nowrap">{{ totalSize }}B / 100Mb</span>
+                  </ProgressBar>
+              </div>
+          </template>
+          <template #content="{ files, uploadedFiles, removeUploadedFileCallback, removeFileCallback }">
+              <div class="flex flex-col gap-8 pt-4">
+                  <div v-if="files.length > 0">
+                      <h5>Pending</h5>
+                      <div class="flex flex-wrap gap-4">
+                          <div v-for="(file, index) of files" :key="file.name + file.type + file.size" class="p-8 rounded-border flex flex-col border border-surface items-center gap-4">
+                              <div>
+                                  <img role="presentation" :alt="file.name" :src="file.objectURL" width="100" height="50" />
+                              </div>
+                              <span class="font-semibold text-ellipsis max-w-60 whitespace-nowrap overflow-hidden">{{ file.name }}</span>
+                              <div>{{ formatSize(file.size) }}</div>
+                              <Badge value="Pending" severity="warn" />
+                              <Button icon="pi pi-times" @click="onRemoveTemplatingFile(file, removeFileCallback, index)" outlined rounded severity="danger" />
+                          </div>
+                      </div>
+                  </div>
+
+                  <div v-if="uploadedFiles.length > 0">
+                      <h5>Completed</h5>
+                      <div class="flex flex-wrap gap-4">
+                          <div v-for="(file, index) of uploadedFiles" :key="file.name + file.type + file.size" class="p-8 rounded-border flex flex-col border border-surface items-center gap-4">
+                              <div>
+                                  <img role="presentation" :alt="file.name" :src="file.objectURL" width="100" height="50" />
+                              </div>
+                              <span class="font-semibold text-ellipsis max-w-60 whitespace-nowrap overflow-hidden">{{ file.name }}</span>
+                              <div>{{ formatSize(file.size) }}</div>
+                              <Badge value="Completed" class="mt-4" severity="success" />
+                              <Button icon="pi pi-times" @click="removeUploadedFileCallback(index)" outlined rounded severity="danger" />
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </template>
+          <template #empty>
+              <div class="flex items-center justify-center flex-col drop-box">
+                  <i class="pi pi-cloud-upload !border-2 !rounded-full !p-8 !text-4xl !text-muted-color" />
+                  <p class="mt-6 mb-0">Drag and drop files to here to upload.</p>
+              </div>
+          </template>
+        </FileUpload>
+        <div class="flex justify-content-around">
+          <Button @click="downloadFiles" severity="info" class="m-3" size="large"><i class="pi pi-download"></i>Download</Button>
+          <Button @click="clearFiles" severity="danger" class="m-3" size="large"><i class="pi pi-trash"></i>Clear</Button>
+        </div>
+    </div>
   </div>
 </template>
 
@@ -77,7 +162,30 @@
     font-weight: 300;
     font-size: 3.5rem;
   }
+  .app_content_light {
+    background-color: var(--p-slate-200);
+    border-radius: .5rem;
+    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.2);
+    height: 85vh;
+    padding: 3%;
+    overflow: auto;
+  }
+  .app_content_dark {
+    background-color: var(--p-slate-800);
+    border-radius: .5rem;
+    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.2);
+    height: 85vh;
+    padding: 3%;
+    overflow: auto;
+  }
   .container {
-    background-color: aquamarine;
+    margin: 0%;
+    padding: 0%;
+    width: 100%;
+    height: 100vh;
+    background-color: var(--p-slate-600);
+  }
+  .drop-box{
+    height: 28vh;
   }
 </style>
