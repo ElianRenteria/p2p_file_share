@@ -1,36 +1,33 @@
 <script setup lang="ts">
   import axios from 'axios';
   import { useToast } from "primevue/usetoast";
-  import { usePrimeVue } from 'primevue/config';
 
   const baseUrl = import.meta.env.VITE_BASEURL;
   const toast = useToast();
   const totalSize = ref(0);
   const totalSizePercent = ref(0);
-  const files = ref([]);
-  const $primevue = usePrimeVue();
+  const files = ref<File[]>([]);
+  const generateObjectURL = (file: File): string => {
+    return URL.createObjectURL(file);
+  };
 
-  const onRemoveTemplatingFile = (file, removeFileCallback, index) => {
+  const onRemoveTemplatingFile = (file: any, removeFileCallback: any, index: any) => {
     removeFileCallback(index);
     totalSize.value -= file.size; // Adjust calculation
     totalSizePercent.value = (totalSize.value / 100000000) * 100; // 100MB in bytes
   };
 
-  const onClearTemplatingUpload = (clear) => {
-      clear();
-      totalSize.value = 0;
-      totalSizePercent.value = 0;
-  };
-
-  const onSelectedFiles = (event) => {
+  const onSelectedFiles = (event: any) => {
     files.value = event.files;
-    files.value.forEach((file) => {
-        totalSize.value += file.size; // Sum file sizes in bytes
-    });
-    totalSizePercent.value = (totalSize.value / 100000000) * 100; // 100MB in bytes
+    if(files){
+      files.value.forEach((file:any) => {
+          totalSize.value += file.size;
+      });
+      totalSizePercent.value = (totalSize.value / 100000000) * 100; // 100MB in bytes
+    }
   };
 
-  const uploadEvent = (callback) => {
+  const uploadEvent = (callback: any) => {
       totalSizePercent.value = totalSize.value / 10;
       callback();
   };
@@ -39,7 +36,7 @@
       toast.add({ severity: "success", summary: "Success", detail: "File Uploaded", life: 3000 });
   };
 
-  const formatSize = (bytes) => {
+  const formatSize = (bytes: any) => {
     const k = 1024;
     const dm = 2; // Adjusted decimal places
     const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
@@ -66,7 +63,7 @@
       toast.add({ severity: 'success', summary: 'Success', detail: 'Files downloaded.', life: 3000 });
     } catch (error) {
       console.error('File download failed:', error);
-      toast.add({ severity: 'danger', summary: 'Error', detail: 'Failed to download files.', life: 3000 });
+      toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to download files.', life: 3000 });
     } 
   };
 
@@ -76,7 +73,7 @@
       toast.add({ severity: 'info', summary: 'Success', detail: 'All files have been cleared from server.', life: 3000 });
     } catch (error) {
       console.error('Failed to clear files:', error);
-      toast.add({ severity: 'danger', summary: 'Error', detail: 'Failed to clear files.', life: 3000 });
+      toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to clear files.', life: 3000 });
     }
   };
 
@@ -85,9 +82,16 @@
 
   function toggleDarkMode() {
       const element = document.querySelector('html');
-      element.classList.toggle('my-app-dark');
-      isDarkMode.value = !isDarkMode.value;
+      if(element){
+        element.classList.toggle('my-app-dark');
+        isDarkMode.value = !isDarkMode.value;
+      }
   }
+
+  const getObjectURL = (file: File) => {
+    return URL.createObjectURL(file);
+  };
+
 </script>
 
 <template>
@@ -96,7 +100,7 @@
     <div class="w-full flex justify-content-start"><Button class="mx-5 my-3" @click="toggleDarkMode()"><i :class="iconClass" style="font-size: 1.5rem"></i></Button></div>
     <div :class="{'app_content_dark': isDarkMode}" class="w-10 h-10 app_content_light">
         <div class="flex justify-content-center align-items-center"><h1 class="mr-2">Pi-Share</h1><i class="pi pi-send" style="font-size: 2.7rem;"></i></div>
-        <FileUpload class="mx-10" name="files" :url="`${baseUrl}/upload`" @upload="onTemplatedUpload($event)" :multiple="true" :maxFileSize="104857600" @select="onSelectedFiles">
+        <FileUpload class="mx-10" name="files" :url="`${baseUrl}/upload`" @upload="onTemplatedUpload()" :multiple="true" :maxFileSize="104857600" @select="onSelectedFiles">
           <template #header="{ chooseCallback, uploadCallback, clearCallback, files }">
               <div class="flex flex-wrap justify-between items-center flex-1 gap-4">
                   <div class="flex gap-2">
@@ -114,15 +118,15 @@
                   <div v-if="files.length > 0">
                       <h5>Pending</h5>
                       <div class="flex flex-wrap gap-4">
-                          <div v-for="(file, index) of files" :key="file.name + file.type + file.size" class="p-8 rounded-border flex flex-col border border-surface items-center gap-4">
-                              <div>
-                                  <img role="presentation" :alt="file.name" :src="file.objectURL" width="100" height="50" />
-                              </div>
-                              <span class="font-semibold text-ellipsis max-w-60 whitespace-nowrap overflow-hidden">{{ file.name }}</span>
-                              <div>{{ formatSize(file.size) }}</div>
-                              <Badge value="Pending" severity="warn" />
-                              <Button icon="pi pi-times" @click="onRemoveTemplatingFile(file, removeFileCallback, index)" outlined rounded severity="danger" />
+                        <div v-for="(file, index) of files" :key="file.name + file.type + file.size" class="p-8 rounded-border flex flex-col border border-surface items-center gap-4">
+                          <div>
+                            <img role="presentation" :alt="file.name" :src="getObjectURL(file)" width="100" height="50" />
                           </div>
+                          <span class="font-semibold text-ellipsis max-w-60 whitespace-nowrap overflow-hidden">{{ file.name }}</span>
+                          <div>{{ formatSize(file.size) }}</div>
+                          <Badge value="Pending" severity="warn" />
+                          <Button icon="pi pi-times" @click="onRemoveTemplatingFile(file, removeFileCallback, index)" outlined rounded severity="danger" />
+                        </div>
                       </div>
                   </div>
 
@@ -131,7 +135,7 @@
                       <div class="flex flex-wrap gap-4">
                           <div v-for="(file, index) of uploadedFiles" :key="file.name + file.type + file.size" class="p-8 rounded-border flex flex-col border border-surface items-center gap-4">
                               <div>
-                                  <img role="presentation" :alt="file.name" :src="file.objectURL" width="100" height="50" />
+                                  <img role="presentation" :alt="file.name" :src="generateObjectURL(file)" width="100" height="50" />
                               </div>
                               <span class="font-semibold text-ellipsis max-w-60 whitespace-nowrap overflow-hidden">{{ file.name }}</span>
                               <div>{{ formatSize(file.size) }}</div>
