@@ -15,12 +15,13 @@
 
 ## Introduction
 
-P2P File Share is a peer-to-peer application that allows users to share files directly with others without the need for a central server. The application is designed to be efficient, secure, and easy to use.
+P2P File Share is a peer-to-peer application that allows users to share files directly with others using a central server. The application is designed to be efficient, secure, and easy to use.
 
 ## Features
 
-- Direct file sharing between peers
-- No central server required
+- Upload files
+- Download files
+- Clear server
 - Secure and encrypted connections
 - Support for large files
 
