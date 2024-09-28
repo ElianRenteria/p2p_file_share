@@ -14,26 +14,26 @@
   const onRemoveTemplatingFile = (file: any, removeFileCallback: any, index: any) => {
     removeFileCallback(index);
     totalSize.value -= file.size; // Adjust calculation
-    totalSizePercent.value = (totalSize.value / 100000000) * 100; // 100MB in bytes
+    totalSizePercent.value = (totalSize.value / 500000000) * 100; // 500MB in bytes
   };
 
   const onSelectedFiles = (event: any) => {
     files.value = event.files;
-    if(files){
-      files.value.forEach((file:any) => {
-          totalSize.value += file.size;
+    if (files.value) {
+      files.value.forEach((file: any) => {
+        totalSize.value += file.size;
       });
-      totalSizePercent.value = (totalSize.value / 100000000) * 100; // 100MB in bytes
+      totalSizePercent.value = (totalSize.value / 500000000) * 100; // 500MB in bytes
     }
   };
 
   const uploadEvent = (callback: any) => {
-      totalSizePercent.value = totalSize.value / 10;
-      callback();
+    totalSizePercent.value = totalSize.value / 5000000; // Adjusted for 500MB
+    callback();
   };
 
   const onTemplatedUpload = () => {
-      toast.add({ severity: "success", summary: "Success", detail: "File Uploaded", life: 3000 });
+    toast.add({ severity: "success", summary: "Success", detail: "File Uploaded", life: 3000 });
   };
 
   const formatSize = (bytes: any) => {
@@ -82,7 +82,7 @@
 
   function toggleDarkMode() {
       const element = document.querySelector('html');
-      if(element){
+      if (element) {
         element.classList.toggle('my-app-dark');
         isDarkMode.value = !isDarkMode.value;
       }
@@ -100,7 +100,7 @@
     <div class="w-full flex justify-content-start"><Button class="mx-5 my-3" @click="toggleDarkMode()"><i :class="iconClass" style="font-size: 1.5rem"></i></Button></div>
     <div :class="{'app_content_dark': isDarkMode}" class="w-10 h-10 app_content_light">
         <div class="flex justify-content-center align-items-center"><h1 class="mr-2">Pi-Share</h1><i class="pi pi-send" style="font-size: 2.7rem;"></i></div>
-        <FileUpload class="mx-10" name="files" :url="`${baseUrl}/upload`" @upload="onTemplatedUpload()" :multiple="true" :maxFileSize="104857600" @select="onSelectedFiles">
+        <FileUpload class="mx-10" name="files" :url="`${baseUrl}/upload`" @upload="onTemplatedUpload()" :multiple="true" :maxFileSize="524288000" @select="onSelectedFiles"> <!-- Updated maxFileSize to 500MB -->
           <template #header="{ chooseCallback, uploadCallback, clearCallback, files }">
               <div class="flex flex-wrap justify-between items-center flex-1 gap-4">
                   <div class="flex gap-2">
@@ -109,7 +109,7 @@
                       <Button @click="clearCallback()" icon="pi pi-times" rounded outlined severity="danger" :disabled="!files || files.length === 0"></Button>
                   </div>
                   <ProgressBar :value="totalSizePercent" :showValue="false" class="md:w-20rem h-1 w-full md:ml-auto">
-                      <span class="whitespace-nowrap">{{ totalSize }}B / 100Mb</span>
+                      <span class="whitespace-nowrap">{{ totalSize }}B / 500Mb</span> <!-- Updated display to 500MB -->
                   </ProgressBar>
               </div>
           </template>
